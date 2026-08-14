@@ -40,6 +40,12 @@ issue had a spec workflow, the **tla-spec-dev spec-graph integration graph** —
 the graph that exercises the generated spec doubles against the real adapters,
 so a spec/impl divergence fails loudly.
 
+Where the deciding instrument records **notes** as well as scores, a note that
+names a gap in the changed surface is answered here: name the graph or test
+that now covers it, and say which note it answers. The score movement that
+follows is an **observation**, never the objective — validation tuned to raise
+a number is the failure the instrument's own rules exist to prevent.
+
 ```bash
 # in the test_graph project (see the test-graph skill for exact invocation)
 # run the named graphs, e.g.:
