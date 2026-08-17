@@ -84,5 +84,6 @@ gh issue close <number> --comment "<summary of tests run + reports attached>"
 ```
 
 This closing behavior is ordinary mode only. An epic ticket PR targets the epic
-branch with `Refs #<number>` and stops for external review; the ticket agent does
-not close the GitHub issue.
+branch with `Refs #<number>` and stops for external review; the epic-owner agent
+merges it into the epic branch at wave close, and the ticket agent neither merges
+it nor closes the GitHub issue.

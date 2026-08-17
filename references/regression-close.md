@@ -28,9 +28,12 @@ tla-spec-dev --spec-root specs close ticket <stable-ticket-id> \
 
 After commit and push, open a PR whose base is `ticket.pr_base` (the epic branch)
 and whose body uses `Refs #<issue-number>`. Include the exact commands, evidence
-paths, close-history path, resulting commit SHA, and the `## Goal contribution`
-section below, then stop for external review. Do not self-merge, target the
-default branch, or close the GitHub issue.
+paths, close-history path, resulting commit SHA, the `## Goal contribution`
+section below, a `## Deferred findings` section (each backlog ID filed with its
+severity and one-line summary, or `None`), the worktree `home close-out`
+verdict, and a `## Review input` section — then stop for external review. The
+epic-owner agent merges this PR into the epic branch at wave close; do not
+self-merge, target the default branch, or close the GitHub issue.
 
 ## 1. Run the regression test graphs
 
@@ -165,8 +168,8 @@ Then open the PR (`Closes #<issue-number>`) or close the issue with a summary of
 the graphs run and reports attached (`references/github-gh.md`).
 
 That final sentence applies only to an ordinary issue. Epic ticket PRs use
-`Refs`, remain open for external review, and leave issue closing to epic
-finalization.
+`Refs` and stop at PR open: the epic-owner agent merges them into the epic
+branch at wave close, and issue closing is left to epic finalization.
 
 ## 7. Close out the worktree's Skill Manager home before removing it
 
@@ -217,6 +220,16 @@ If the repository has no per-checkout home, say so explicitly rather than omitti
 the step — an omitted step reads as "nothing to do here", which is exactly the
 state this gate exists to distinguish from "checked, nothing to lose".
 
+An epic ticket runs the gate but neither remedy-by-`home sync` nor the removal.
+The close-out is read-only there — its verdict goes in the PR body — and only
+`unit publish` is the ticket agent's to run: the project home is one shared
+destination that a ticket agent cannot see the other tickets writing, so the
+epic agent reconciles every worktree's home into it in serial at wave close.
+The worktree is left standing; the epic agent removes every worktree in one
+sweep at the end of the epic, acting on the recorded verdict. Write the epic
+form of these two lines into the issue instead of the ordinary form
+(`references/epic-assignment.md`).
+
 ## Checklist to embed in the issue
 
 - [ ] Named test graphs pass (incl. tla-spec-dev spec-graph integration graph)
@@ -235,3 +248,7 @@ state this gate exists to distinguish from "checked, nothing to lose".
 - [ ] Worktree torn down with `"$WT" close <issue-number>-<slug>` (the gate runs
       first; clear every blocker it names with `unit publish` / `home sync
       --merge` and re-run — never `git worktree remove`)
+- [ ] Epic tickets instead: `home close-out` run as a read-only gate and its
+      verdict in the PR body, every unit changed named under `## Review input` →
+      *Machinery friction*, blockers cleared only with `unit publish`, and the
+      worktree left standing for the epic agent's end-of-epic sweep

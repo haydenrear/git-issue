@@ -340,4 +340,5 @@ the issue is worked (`references/epic-assignment.md`).
   skill writes an epic assignment.
 - An epic ticket PR uses `Refs #<issue>`, targets the declared epic branch, and
   stops for external review. It does not close the GitHub issue or merge into
-  either the epic or default branch.
+  either the epic or default branch: the epic-owner agent merges it into the
+  epic branch at wave close, and issue close is epic finalization's.
