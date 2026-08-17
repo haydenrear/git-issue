@@ -82,8 +82,8 @@ validation:
 review:
   mode: "external"          # external TO THIS AGENT — do not change this value
   ticket_agent_stops_after: "pr_open"
-  merged_by: "epic-owner"   # never this agent; never the default branch
-  cadence: "wave"           # when the human review happens, epic-side
+  merged_by: "epic-owner"   # REQUIRED. A ROLE, not a person — invariant
+  cadence: "wave"           # wave | milestone | finalization-only, epic-side
   artifact_root: "results/epic-<slug>/review"
 deferment:
   mode: "batch"          # batch | ask | inline
@@ -98,9 +98,29 @@ overrides ordinary instructions to branch from or target the default branch.
 `review.mode` stays `external` because that is what the field means to the
 ticket agent — the review is not that agent's, and `git-issue-workflow`'s
 `references/epic-ticket.md` §1 refuses an assignment whose mode is anything
-else. `merged_by` and `cadence` are additive: they say who performs the merge
-the ticket agent is already forbidden to perform, and when the human sees the
-result. Do not encode the cadence in `mode`.
+else. `merged_by` and `cadence` say who performs the merge the ticket agent is
+already forbidden to perform, and when the human sees the result. Do not encode
+the cadence in `mode`.
+
+**`merged_by` is required, and it is always `epic-owner` — including when the
+user said they would merge the ticket PRs themselves.** The value names the
+*role* opposite the ticket agent, not the person filling it. A user who wants to
+press the button is recorded once, in the canonical plan, as
+`review_policy.merges: human`, where it changes what the **epic** agent does
+(`<git-epic-workflow-skill>/references/human-review.md` §1). Nothing about the
+ticket agent changes: it opens the PR into `epic/<slug>` and stops, whoever
+merges. Rendering `merged_by: "human"` would put a person where a role belongs
+and make the one line that tells the agent "the merge is not yours" vary for a
+reason it cannot act on — `validate_assignment.py` rejects both that and the
+field's absence, because the schema and this renderer both carry it, so a
+missing one is renderer drift rather than a choice.
+
+`cadence` carries `wave`, `milestone`, or `finalization-only`, and nothing else.
+There is no `ticket` cadence: `git-epic-workflow` moved the human checkpoint off
+the ticket PR deliberately, and a user who wants a checkpoint per ticket gets it
+by scheduling one ticket per wave — which pays the serialization in the schedule,
+where the plan validator can see it, rather than in a review the ticket agent
+would have to wait on.
 
 - Read `goals` before implementing. The `expected_effect` is the result this
   change is aiming at; the ticket named in `decided_by` decides the goal on the
@@ -157,8 +177,8 @@ result. Do not encode the cadence in `mode`.
 ## Evaluation-ticket variant
 
 A ticket that *decides* one or more goals rather than contributing to them sets
-`role: evaluation`, lists `owns_goals`, and replaces the per-goal contribution
-block with the harness it must run:
+`role: evaluation`, lists `owns_goals`, and **adds** to each goal the harness it
+must run and where the result lands:
 
 ```yaml
 ticket:
@@ -174,6 +194,30 @@ goals:
     expected_effect: "decides the goal; adds no behavioral delta"
     local_signal: "N/A: this ticket is the measurement"
 ```
+
+**That block is the delta, not the whole goal entry.** Render every field an
+implementation goal carries as well — `kind`, `statement`, `metric`, and
+`decided_by` are unchanged and still required — plus these. Three consequences
+an author has to render, not infer:
+
+- **`contribution` is required here too, and it is exactly `guard`.** It is not
+  replaced and not omitted: this skill renders `contribution` on every goal and
+  `git-issue-workflow`'s `references/epic-ticket.md` §1 reads it on every goal,
+  so an evaluation goal without it is a missing field rather than a shorter
+  variant. `guard` is the only honest value — the ticket decides the goal and
+  adds no behavioral delta to it, and `direct` would be a ticket claiming to
+  move the number it also measures.
+- **`harness` and `evidence_root` are required on every goal this ticket owns.**
+  `git-issue-workflow` §1 stops for correction when either is missing, so an
+  assignment that omits one is caught by the ticket agent after the URL went
+  out. `validate_assignment.py` checks both before dispatch.
+- **`harness` normally repeats `decided_by.harness` verbatim.** That field is
+  the goal's own statement of what decides it and this is the ticket that runs
+  it. The validator *warns* (exit 0) when they differ rather than failing,
+  because an elaboration can be deliberate — a fresh-start flag, an explicit
+  output path — but the same difference is what the plan and the renderer
+  disagreeing about the command looks like. When the warning fires, confirm
+  which it is against the canonical plan instead of silencing it.
 
 `owns_goals` must list every goal whose canonical `evaluation_ticket` is this
 ticket — no more and no fewer. Its issue body states, in addition to the shared
@@ -208,9 +252,16 @@ one that is there: an unrendered `<placeholder>`, a `pr_base` that is not the ep
 branch, an epic branch that is the default branch, a ticket depending on or
 promoting after itself, a REQUIRED matrix entry excused as `N/A`, an `N/A` with no
 reason, a non-evaluation ticket deciding its own goal, a `review.mode` other than
-`external`, and a missing `deferment` block. Run it **before handing out the issue
-URL**, and again after any resume that rewrites assignments, because a resume
-edits issue bodies rather than the plan.
+`external`, a `merged_by` that is missing or is not `epic-owner`, a
+`review.cadence` of `ticket`, an evaluation goal missing `harness`,
+`evidence_root`, or carrying a `contribution` other than `guard`, and a missing
+`deferment` block. Run it **before handing out the issue URL**, and again after
+any resume that rewrites assignments, because a resume edits issue bodies rather
+than the plan.
+
+Warnings print and still exit 0 — including an evaluation goal whose `harness`
+differs from its `decided_by.harness`. Read them; a warning here is a question
+about the plan, not noise to clear.
 
 Two things follow from the schema living elsewhere. A field added to the
 specification must be added to this renderer and to that validator in the same
@@ -239,7 +290,8 @@ author's own work.
   ID, and `decided_by.ticket` / `decided_by.harness` are that goal's
   `evaluation_ticket` and `harness`. A value that exists only in the issue is a
   dispatch error, not a local refinement — fix the plan, then re-render.
-- `contribution` is one of `direct`, `enabling`, or `guard`, and
+- `contribution` is present on **every** goal — evaluation tickets included, where
+  it is exactly `guard` — and is one of `direct`, `enabling`, or `guard`.
   `expected_effect` is non-empty in every case (`none — enabling only` plus what
   it unblocks, for `enabling`). `local_signal` is a runnable command or
   `N/A: <reason>`, never an empty string. A `direct` contribution with no local
@@ -247,9 +299,10 @@ author's own work.
   measurement from inside the worktree.
 - `ticket.role` is `implementation` or `evaluation`. When it is `evaluation`,
   `owns_goals` lists exactly the goals whose `evaluation_ticket` is this ticket,
-  each goal entry carries `harness` and `evidence_root`, and the ticket promotes
-  after every contributor to those goals. When it is `implementation`,
-  `owns_goals` is absent.
+  every goal entry carries `harness`, `evidence_root`, and
+  `contribution: "guard"` — all three required, all three checked before
+  dispatch — and the ticket promotes after every contributor to those goals.
+  When it is `implementation`, `owns_goals` is absent.
 - The prose `## Goals & evaluation` section elsewhere in the body agrees with
   this block. The assignment is authoritative; a disagreement is fixed before
   dispatch rather than left for the ticket agent to adjudicate.
@@ -261,9 +314,11 @@ author's own work.
   and appears only when that repository is the target. The evidence root is a
   ticket-specific destination for reports and close evidence.
 - Review remains external and the stop point remains `pr_open`. `merged_by` is
-  the epic owner — never the ticket agent, never the default branch — and
-  `cadence` and `artifact_root` say when and where the epic-side human review
-  happens. Never encode the cadence in `mode`: `git-issue-workflow`'s
+  present and reads `epic-owner` — a role, never the ticket agent, never the
+  default branch, and never `human` however the user answered the merge question
+  — while `cadence` (`wave`, `milestone`, or `finalization-only`) and
+  `artifact_root` say when and where the epic-side human review happens. Never
+  encode the cadence in `mode`: `git-issue-workflow`'s
   `references/epic-ticket.md` §1 refuses an assignment whose mode is anything
   but `external`.
 - The `deferment:` block is copied from the canonical plan's `deferment_policy`

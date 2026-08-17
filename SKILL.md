@@ -275,7 +275,13 @@ Run these to close the issue:
 - **Contribution** is one of `direct` (this change is expected to move the
   metric — give a directional or numeric effect), `enabling` (`none — enabling
   only`, plus what it unblocks), or `guard` (must not regress this metric while
-  targeting something else — the local signal is the regression check).
+  targeting something else — the local signal is the regression check). It is
+  filled in **every** case, including an issue whose whole slice is the
+  measurement: an evaluation issue or epic evaluation ticket writes `guard`,
+  because it decides the goal and adds no behavioral delta to it, and a ticket
+  claiming to move the number it also measures is the conflict of interest the
+  role split exists to prevent. Never drop the field to signal "this one
+  measures".
 - **Local signal** is a *signal, not a gate*. The implementer runs it, records
   the number, and reports it even when it moves the wrong way. It never
   justifies weakening a required test, tuning to the metric, or widening scope.
