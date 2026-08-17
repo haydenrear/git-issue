@@ -193,6 +193,10 @@ explicitly rather than deleting it — the implementer relies on the shape.
 open questions the implementer should resolve first>
 
 ## Worktree & branch
+<!-- ORDINARY issues only. In epic mode the assignment DECLARES the worktree path
+     and the branch, so rewrite this section to create the worktree there, from
+     the latest origin/epic/<slug>, with its home bootstrapped in the same
+     command. See "For epic mode" below and references/worktree-branch.md. -->
 Create the worktree AND its own Skill Manager home with ONE command, from the
 repo root. It is the same command for a plain repo and an integration repo:
 `WT="${SKILL_MANAGER_HOME:-$HOME/.skill-manager}/skills/git-issue-workflow/scripts/wt"`
@@ -233,6 +237,9 @@ Run these to close the issue:
 - Commit and push to `feature/<issue-number>-<slug>`
 - Report the goal contribution in the PR body (`## Goal contribution`): expected
   effect, measured local signal or `N/A: reason`, and what decides the goal
+<!-- ORDINARY issues only. In epic mode DELETE the next bullet and write the epic
+     form instead: run the gate read-only, verdict in the PR body, worktree left
+     standing. See "For epic mode" below and references/regression-close.md §7. -->
 - Tear the worktree down with `"$WT" close <issue-number>-<slug>` — one command,
   same in both repo shapes. It runs the home close-out gate first and **refuses**
   while the worktree still holds skill work that removing it would destroy, then
@@ -268,18 +275,42 @@ Run these to close the issue:
 - **Contribution** is one of `direct` (this change is expected to move the
   metric — give a directional or numeric effect), `enabling` (`none — enabling
   only`, plus what it unblocks), or `guard` (must not regress this metric while
-  targeting something else — the local signal is the regression check).
+  targeting something else — the local signal is the regression check). It is
+  filled in **every** case, including an issue whose whole slice is the
+  measurement: an evaluation issue or epic evaluation ticket writes `guard`,
+  because it decides the goal and adds no behavioral delta to it, and a ticket
+  claiming to move the number it also measures is the conflict of interest the
+  role split exists to prevent. Never drop the field to signal "this one
+  measures".
 - **Local signal** is a *signal, not a gate*. The implementer runs it, records
   the number, and reports it even when it moves the wrong way. It never
   justifies weakening a required test, tuning to the metric, or widening scope.
 - **Decided by** names the run that settles the goal — this issue's own harness
   run for an ordinary issue, or the epic's evaluation ticket in epic mode.
 
-For epic mode, retain every standard section above and insert the rendered
+For epic mode, retain every standard **section** above and insert the rendered
 marker-delimited block from `references/epic-assignment.md` between the completed
 Summary section and `## Goals & evaluation`, so the section order becomes
 Summary → assignment → Goals & evaluation → References. The block is the
 machine-readable override; do not merely describe the epic in prose.
+
+**"Retain the section" is not "retain every line in it."** Three of the standard
+instructions say the opposite of what the assignment says, and an issue body
+carrying both orders the implementer to do a thing and forbids it in the same
+document. Rewrite them into their epic form as you render each section — do not
+leave them standing next to the assignment and expect the override clause to
+settle it, because that clause covers the branch, the PR target, and closing
+against the default branch, and none of these three is any of those:
+
+| Standard instruction | Epic form to write instead |
+| --- | --- |
+| `## Worktree & branch` — `"$WT" new <issue-number>-<slug>`, which chooses the path `<parent>/<repo>-<ticket>` | The assignment **declares** the worktree path and the feature branch. Create the worktree at the declared path from the latest `origin/epic/<slug>` and give it its own home in the same command — `skt ticket new <ticket> --base "$commit_oid" --path <declared-worktree>`, or `git worktree add` chained with `bootstrap-home.sh --root <declared-worktree>` where `skt` is absent. Never a bare `git worktree add`. (`references/worktree-branch.md` § *Epic assignment override*) |
+| `## Regression & close-out` — "Tear the worktree down with `"$WT" close …`" | **Leave the worktree standing.** Run `home close-out` as a **read-only** gate, state its verdict in the PR body, clear blockers only with `unit publish`, and never `home sync` into the project home. The epic agent reconciles that home in serial at wave close and removes every worktree in one sweep at the end of the epic. (`references/regression-close.md` §7) |
+| The PR / issue-close instruction the close-out section ends on | Push and open the PR with `Refs #<issue-number>` against `epic/<slug>`, then **stop**. The epic owner merges it; issue closing belongs to epic finalization. (`references/regression-close.md` §6) |
+
+Each reference page carries its own correction in the prose an implementer
+reads; this table is the **author's** copy, so that an issue is never rendered
+with the ordinary form of an instruction and the epic form of it side by side.
 
 Keep the `## Goals & evaluation` section in epic mode and render it **from the
 assignment's `goals:` entries**, not from a fresh conversation with the user: the
@@ -313,6 +344,21 @@ the issue is worked (`references/epic-assignment.md`).
    in-repo ticket on branch creation. For an epic, verify the issue maps to one
    existing planned ticket and instruct the implementer to run only `open ticket
    <id>` against the already-scaffolded shared workflow.
+7. **Epic mode only — validate the rendered body before handing out its URL.**
+   This skill renders the assignment block but does not own its schema; the owner
+   is `<git-epic-workflow-skill>/references/epic-ticket.md` and the mechanical
+   check over it is that skill's `scripts/validate_assignment.py`, run against
+   what GitHub now holds:
+   ```bash
+   gh issue view <issue-number> --json body -q .body \
+     | uv run <git-epic-workflow-skill>/scripts/validate_assignment.py \
+         --expect-ticket <stable-ticket-id> --expect-epic-branch epic/<slug>
+   ```
+   A rendered block is the only artifact this skill produces that another agent
+   parses, so it is the one thing worth checking mechanically rather than by
+   reading. Do not write a second validator here; see
+   `references/epic-assignment.md` § *Validate before dispatch* for what it
+   catches and what remains yours.
 
 ## Boundaries
 
