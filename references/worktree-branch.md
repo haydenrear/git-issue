@@ -15,6 +15,21 @@ fetch, and create the worktree from the latest `origin/epic/<slug>`. Never
 substitute `origin/<default-branch>` in epic mode. The ticket PR also targets the
 declared epic branch rather than the default branch.
 
+That override changes **which command this section embeds**, not just its base
+revision, and it changes both ends of the lifecycle:
+
+- **Creation.** `wt new <ticket>` chooses the worktree path itself
+  (`<parent>/<repo>-<ticket>`); an epic assignment *declares* one. Embed the
+  declared path instead: `skt ticket new <ticket> --base "$commit_oid" --path
+  <declared-worktree>` where the home carries `skt`, or `git worktree add
+  <declared-worktree> -b <declared-branch> "$commit_oid"` **chained with `&&`**
+  to `bootstrap-home.sh --root <declared-worktree>` where it does not. The chain
+  is not decorative: a `git worktree add` that lands without the home step
+  produces a checkout whose agent writes the operator's global
+  `~/.skill-manager`.
+- **Teardown.** There is none. Do not embed the *Cleanup* command below in an
+  epic issue — see that section.
+
 ## One command, and where it is
 
 A worktree needs two things that must happen in one step: the checkout, and the
@@ -175,6 +190,14 @@ from the start. See `references/spec-workflow.md`.
 
 ## Cleanup
 
+**Ordinary issues only.** An epic ticket's worktree outlives the ticket — the
+epic agent sweeps them all at the end of the epic — so none of the removal below
+belongs in an epic issue body. What that issue embeds instead is the read-only
+form at the end of this section. Deciding that here, before the command, is the
+point: an issue body is pasted verbatim, and a teardown line an author leaves in
+"because the section says retain everything" is an order the assignment
+elsewhere in the same body forbids.
+
 After the branch merges and the issue closes, the implementer removes the
 worktree — but **the home is checked first**, because the removal is what destroys
 it:
@@ -190,7 +213,9 @@ two steps out: an issue body gets pasted verbatim, and two commands on separate
 lines run the removal whatever the gate returned — which is the exact loss the
 gate exists to prevent. (If you do spell them out, the `&&` is load-bearing:
 `skill-manager home close-out --home <worktree>/.skill-manager --into
-<repo-root>/.skill-manager && git worktree remove <worktree>`.)
+<main-working-tree>/.skill-manager && git worktree remove <worktree>`. See
+`references/regression-close.md` §7 for what `<main-working-tree>` is and the
+one command that computes it.)
 
 `wt close` resolves the ticket by searching where ticket worktrees live, so it
 works from a checkout other than the one that opened the worktree — but it must

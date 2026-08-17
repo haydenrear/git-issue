@@ -190,6 +190,37 @@ assignment rules:
 
 ## Validate before dispatch
 
+**Run the mechanical check first, on the issue body GitHub actually holds.** This
+skill renders the block; it does not own its schema. The owner is
+`<git-epic-workflow-skill>/references/epic-ticket.md`, and the one check over all
+three copies of that schema — specification, this renderer, and
+`git-issue-workflow`'s reader — is that skill's `scripts/validate_assignment.py`:
+
+```bash
+gh issue view <issue-number> --json body -q .body \
+  | uv run <git-epic-workflow-skill>/scripts/validate_assignment.py \
+      --expect-ticket <stable-ticket-id> --expect-epic-branch epic/<slug>
+```
+
+Exit 2 means there is no parseable assignment block at all — usually a fence or a
+marker lost in the `gh issue edit` round-trip. Exit 1 lists what is wrong with the
+one that is there: an unrendered `<placeholder>`, a `pr_base` that is not the epic
+branch, an epic branch that is the default branch, a ticket depending on or
+promoting after itself, a REQUIRED matrix entry excused as `N/A`, an `N/A` with no
+reason, a non-evaluation ticket deciding its own goal, a `review.mode` other than
+`external`, and a missing `deferment` block. Run it **before handing out the issue
+URL**, and again after any resume that rewrites assignments, because a resume
+edits issue bodies rather than the plan.
+
+Two things follow from the schema living elsewhere. A field added to the
+specification must be added to this renderer and to that validator in the same
+change — the failure it prevents is measured, not hypothetical: `deferment:`
+existed in the specification and not in this renderer, so every dispatched ticket
+reached its agent with no failure-case policy and the issues parsed cleanly. And
+a clean validator run is not a dispatch check: the validator reads one issue body
+in isolation and cannot see the canonical plan, so everything below stays the
+author's own work.
+
 - `epic.branch` exists remotely, `base_sha` and `plan_commit` are reachable
   from it, and
   `ticket.pr_base` exactly equals `epic.branch`.
