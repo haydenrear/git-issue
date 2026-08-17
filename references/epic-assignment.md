@@ -127,9 +127,11 @@ result. Do not encode the cadence in `mode`.
 - The worktree has its own Skill Manager home (`<worktree>/.skill-manager`,
   gitignored, a real copy of the project home), and **nothing changed inside it
   is in this PR**. Before stopping, run
-  `skill-manager home close-out --home <worktree>/.skill-manager --into <repo-root>/.skill-manager`
-  and state the verdict in the PR body, then list every unit changed and why
-  under `## Review input` → *Machinery friction*.
+  `skill-manager home close-out --home <worktree>/.skill-manager --into <main-working-tree>/.skill-manager`
+  — the **main working tree's** home, not `$PWD`'s nearest git toplevel, which
+  from inside the worktree names the worktree's own home — and state the verdict
+  in the PR body, then list every unit changed and why under `## Review input` →
+  *Machinery friction*.
   `skill-manager unit publish <unit> --ticket <ticket>` is allowed for the
   agent's own edits — that reaches the unit's own repository and contends with
   nothing. Do **not** run `home sync` into the project home: that is one shared
