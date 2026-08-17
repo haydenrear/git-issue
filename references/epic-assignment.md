@@ -80,12 +80,27 @@ validation:
   toolchain_spec_workflow: "N/A unless this repository is tla-spec-dev"
   evidence_root: "<ticket-results-path>"
 review:
-  mode: "external"
+  mode: "external"          # external TO THIS AGENT — do not change this value
   ticket_agent_stops_after: "pr_open"
+  merged_by: "epic-owner"   # never this agent; never the default branch
+  cadence: "wave"           # when the human review happens, epic-side
+  artifact_root: "results/epic-<slug>/review"
+deferment:
+  mode: "batch"          # batch | ask | inline
+  blocking: "escalate"   # escalate | ask
+  budget: 5
+  backlog: "specs/desired_program_model/deferred_findings.yaml"
 ```
 
 This issue belongs to an existing shared spec workflow. The epic assignment
 overrides ordinary instructions to branch from or target the default branch.
+
+`review.mode` stays `external` because that is what the field means to the
+ticket agent — the review is not that agent's, and `git-issue-workflow`'s
+`references/epic-ticket.md` §1 refuses an assignment whose mode is anything
+else. `merged_by` and `cadence` are additive: they say who performs the merge
+the ticket agent is already forbidden to perform, and when the human sees the
+result. Do not encode the cadence in `mode`.
 
 - Read `goals` before implementing. The `expected_effect` is the result this
   change is aiming at; the ticket named in `decided_by` decides the goal on the
@@ -103,9 +118,39 @@ overrides ordinary instructions to branch from or target the default branch.
   and rerun the validation matrix.
 - Mark and close only this spec ticket with every evidence path. Never run the
   whole-workflow close script and never use `--accept-new`.
+- Defects found outside this ticket's conflict keys and semantic delta are
+  **deferred, not fixed**: record them in the backlog under the epic's deferment
+  policy and keep working the assigned slice. Escalate blocking out-of-scope
+  findings instead of widening scope. List each backlog ID filed, with its
+  severity and a one-line summary, under `## Deferred findings` in the PR body,
+  or `None`.
+- The worktree has its own Skill Manager home (`<worktree>/.skill-manager`,
+  gitignored, a real copy of the project home), and **nothing changed inside it
+  is in this PR**. Before stopping, run
+  `skill-manager home close-out --home <worktree>/.skill-manager --into <main-working-tree>/.skill-manager`
+  — the **main working tree's** home, not `$PWD`'s nearest git toplevel, which
+  from inside the worktree names the worktree's own home — and state the verdict
+  in the PR body, then list every unit changed and why under `## Review input` →
+  *Machinery friction*.
+  `skill-manager unit publish <unit> --ticket <ticket>` is allowed for the
+  agent's own edits — that reaches the unit's own repository and contends with
+  nothing. Do **not** run `home sync` into the project home: that is one shared
+  destination, this agent cannot see the other tickets writing it, and the epic
+  agent reconciles every worktree's home there in serial at wave close.
+- Commit and push everything to be kept — evidence, backlog entries, close
+  history. Leave the worktree standing; the epic agent removes every worktree in
+  one sweep at the end of the epic, after checking that nothing uncommitted,
+  stashed, unpushed, or unmerged is left in it.
+- The PR body is **review input**, not only a delivery record. The epic owner
+  merges it and then builds one review over the whole wave for a human, so it
+  carries a `## Review input` section: the hot spots created, the decisions made
+  that nobody asked for, any guardrail overridden, where the agent would look
+  for bugs in its own change, and what about the tooling or skills slowed it
+  down. The ticket agent is the only one who still knows the last two.
 - Push the sealed ticket branch and open its PR with base `epic/<slug>` and
-  `Refs #<issue-number>`. Stop for external review; do not merge to the default
-  branch or close the GitHub issue.
+  `Refs #<issue-number>`. Stop for external review. The epic owner merges this
+  PR into the epic branch; do not merge it, do not merge to the default branch,
+  and do not close the GitHub issue.
 <!-- git-epic-workflow:assignment:end -->
 ````
 
@@ -140,8 +185,8 @@ assignment rules:
   `unmeasured` with a reason) per goal in the PR body;
 - never edit a target to match a result and never re-run selectively until a
   number passes — report the run that happened;
-- file regressions and shortfalls back to the epic owner instead of fixing them
-  in this ticket.
+- file regressions and shortfalls as deferred findings for the epic owner
+  instead of fixing them in this ticket.
 
 ## Validate before dispatch
 
@@ -184,7 +229,16 @@ assignment rules:
   explicit N/A reason. `specWorkflow` is the tla-spec-dev toolchain's own graph
   and appears only when that repository is the target. The evidence root is a
   ticket-specific destination for reports and close evidence.
-- Review remains external and the stop point remains `pr_open`.
+- Review remains external and the stop point remains `pr_open`. `merged_by` is
+  the epic owner — never the ticket agent, never the default branch — and
+  `cadence` and `artifact_root` say when and where the epic-side human review
+  happens. Never encode the cadence in `mode`: `git-issue-workflow`'s
+  `references/epic-ticket.md` §1 refuses an assignment whose mode is anything
+  but `external`.
+- The `deferment:` block is copied from the canonical plan's `deferment_policy`
+  — mode, blocking rule, budget, and backlog path — not authored here. See
+  `<git-epic-workflow-skill>/references/deferment.md` for what those values
+  mean.
 - The body contains exactly one start marker and one end marker.
 
 For a new issue, create the ordinary work order first, capture its number and

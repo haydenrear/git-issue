@@ -209,7 +209,13 @@ was attempted; neither prints blockers, because neither assessed anything.
 removal, in an integration repo and a plain one alike. Put it in the issue's
 close-out checklist; the implementer will not invent it.
 
-For an epic ticket, external review owns merge and issue close. Do not remove
-the worktree merely because the ticket agent opened its PR — but do run the gate
-and record its verdict in the PR body, because the epic finalizer is the one who
-will remove the worktree and cannot see inside its home.
+For an epic ticket, the epic-owner agent merges the ticket PR into the epic
+branch at wave close, and issue close is still not the ticket agent's. Do not
+remove the worktree merely because the ticket agent opened its PR — but do run
+the gate and record its verdict in the PR body, because the epic agent removes
+every worktree in one sweep at the end of the epic and acts on that recorded
+verdict; it cannot see inside the home itself. Of the two exit-1 remedies, only
+`unit publish` is the ticket agent's there: `home sync` into the project home is
+one shared destination the agent cannot see its siblings writing, and the epic
+agent reconciles every worktree's home into it in serial at wave close
+(`references/epic-assignment.md`).
