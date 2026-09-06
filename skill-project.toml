@@ -49,8 +49,8 @@ description = "Discovery-first tracker work orders: references sections, goal/ev
 #     description field, skill-manager.toml, references/ pages, and on the
 #     install/bind/sync round trip that ships an edit into a store ---
 
-[skills.skill-publisher]
-source = "github:haydenrear/skill-publisher-skill"
+[skills.unit-authoring]
+source = "github:haydenrear/skt"
 
 # --- required BY skill-publisher, not chosen here: its SKILL.md `skill-imports`
 #     names `skill-manager` (references/skill-imports.md), and `project resolve`
@@ -60,7 +60,7 @@ source = "github:haydenrear/skill-publisher-skill"
 #     surface used to prove an edit here actually reaches a store ---
 
 [skills.skill-manager]
-source = "github:haydenrear/skill-manager-skill"
+source = "github:haydenrear/skt"
 
 # --- REPO-SPECIFIC DECISION: spec-double-compiler, test-graph and deploy-helm
 #     are deliberately NOT declared, even though this unit's own SKILL.md
