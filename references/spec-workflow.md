@@ -26,20 +26,30 @@ assignment. See `references/epic-assignment.md`.
 
 ## Decide: REQUIRED or NOT
 
-Mark the Spec workflow section **REQUIRED** when the change:
+The default is **NOT REQUIRED**. A spec pass is not cheap: it opens a ticket
+workspace, edits a model, runs TLC and closes with evidence, and measured
+across three eval rounds it consumed a large share of a ticket's tokens while
+catching nothing the regression graphs did not. Charge it only where it pays.
 
-- alters what an external caller can observe → `External.tla`, or
-- adds/changes internal state, variables, actions, or invariants →
-  `Internal.tla`, or
-- changes any behavior currently covered by generated spec doubles / spec unit
-  tests.
+Mark the Spec workflow section **REQUIRED** only when discovery can name, in
+the issue body, the concrete model element that changes:
 
-Mark **NOT REQUIRED** only for changes with no state-machine surface (docs,
-pure refactors with identical behavior, build tweaks). State the reason in one
-line so the implementer can challenge it.
+- a specific `Internal.tla` action, state variable, or invariant the change
+  adds, removes, or alters, or
+- a specific externally observable behavior in `External.tla` (when the
+  project has the optional External view), or
+- a generated spec double or spec-unit adapter the change breaks.
 
-When unsure, choose REQUIRED. A spec pass that turns out to be a no-op is cheap;
-a behavior change that skipped the spec is a silent regression.
+If you cannot write that line, mark **NOT REQUIRED** and say why in one line
+(docs, refactor with identical behavior, build or tooling, a change with no
+named model element). The implementer can challenge it. An epic assignment is
+the one exception: it is always REQUIRED and names its ticket, because the
+epic owner already planned the model change.
+
+When REQUIRED, scope it: the implementer edits the ticket `desired/` model for
+the named element, runs TLC once, and closes. The issue must not ask for the
+optional layer (External view, adapters, providers, Test Graph bindings) unless
+the repository already has it and the change touches it.
 
 ## What the issue must specify when REQUIRED
 

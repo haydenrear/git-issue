@@ -131,9 +131,10 @@ what the issue body must contain:
   `## Goals & evaluation` section (move 2). Ask the user; do not derive a target
   from the codebase. If there is genuinely nothing to measure, the answer is
   `N/A: <reason>`, which is a recorded decision rather than a skipped question.
-- **Does it change state-machine behavior?** Decides the spec-workflow section
-  (move 5). Err toward yes whenever the change alters what an external caller can
-  observe or an internal invariant.
+- **Does it change a named model element?** Decides the spec-workflow section
+  (move 5). Default NOT REQUIRED; mark REQUIRED only when you can name the
+  `Internal.tla` action, variable, or invariant that changes
+  (`references/spec-workflow.md`).
 - **What could it regress?** The affected test graphs become the close-out
   checklist (move 6).
 - **Ordinary issue or epic assignment?** Epic mode is valid only after the epic
@@ -216,7 +217,7 @@ worktree — publish it with
 (see references/worktree-branch.md)
 
 ## Spec workflow — REQUIRED | NOT REQUIRED
-<!-- If REQUIRED, keep this block; if NOT REQUIRED, state why in one line. -->
+<!-- Default NOT REQUIRED: state why in one line. REQUIRED only when the model element below is named. -->
 On feature-branch creation, open the spec workflow with spec-double-compiler +
 tla-spec-dev. Expected changes:
 - **Internal.tla**: <state/vars/actions to add or change>
