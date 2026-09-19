@@ -182,9 +182,23 @@ fan-out contains any of it.
 So the issue has to name the gate. It is one command, and it writes nothing:
 
 ```bash
+# <main-working-tree> is computed, not typed: `git worktree list` names the main
+# working tree first, always, so this answers the same from the worktree, from a
+# sibling worktree, and from the main tree itself. `git rev-parse --show-toplevel`
+# does NOT: run inside the worktree it answers the worktree, and --into would
+# then name the very home being assessed.
+main_working_tree="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+
 skill-manager home close-out --home <worktree>/.skill-manager \
-                             --into <repo-root>/.skill-manager
+                             --into "$main_working_tree"/.skill-manager
 ```
+
+Write that derivation into the issue, not just the placeholder. `git-issue-workflow`
+(`references/skill-homes.md`, `references/complete.md`, `references/epic-ticket.md`)
+and `git-epic-workflow` all call this directory `<main-working-tree>`, and the
+gate is only meaningful when both halves of the pair are the two homes the copy
+was actually made between — a gate pointed at one home twice returns a confident
+`clean`, which is worse than an error because nothing looks wrong.
 
 `--into` is the **project** home the worktree's was cloned from, never
 `~/.skill-manager`. Exit 0 means there is provably nothing to lose. Of the three
@@ -198,10 +212,11 @@ distinguish them, or a frozen destination reads as "blocked" and a typo reads as
 Exit 1 names every blocking unit with the literal command that clears it, and
 there are two shapes, answering different questions:
 
-- `skill-manager home sync --from <worktree>/.skill-manager --to <repo-root>/.skill-manager --merge`
+- `skill-manager home sync --from <worktree>/.skill-manager --to <main-working-tree>/.skill-manager --merge`
   moves the edit **up a tier** so the teardown does not take it. Local to this
   machine. A conflict is reported, never resolved, and a conflicted unit writes
-  nothing.
+  nothing. **Ordinary issues only** — an epic ticket never runs this; see the
+  epic paragraph at the end of this section.
 - `skill-manager unit publish <unit> --ticket <issue-number>` puts it in the
   **unit's own git repository**. This is the only route that reaches another
   project or outlives this machine, and it is the one owed for a skill the
@@ -232,6 +247,11 @@ form of these two lines into the issue instead of the ordinary form
 
 ## Checklist to embed in the issue
 
+Embed **one** of the two teardown lines at the end, never both. An issue body is
+a work order: a checklist carrying "tear the worktree down" *and* "leave the
+worktree standing" is not a checklist with an exception, it is two conflicting
+orders, and the implementer resolves it by guessing.
+
 - [ ] Named test graphs pass (incl. tla-spec-dev spec-graph integration graph)
 - [ ] Test-graph reports attached to the in-repo spec ticket
 - [ ] Spec ticket closed via spec-double-compiler + tla-spec-dev
@@ -245,10 +265,12 @@ form of these two lines into the issue instead of the ordinary form
       target with a `met` / `missed` / `unmeasured` verdict per goal, from the
       run that actually happened
 - [ ] Committed and pushed to `feature/<issue-number>-<slug>`
-- [ ] Worktree torn down with `"$WT" close <issue-number>-<slug>` (the gate runs
-      first; clear every blocker it names with `unit publish` / `home sync
-      --merge` and re-run — never `git worktree remove`)
-- [ ] Epic tickets instead: `home close-out` run as a read-only gate and its
-      verdict in the PR body, every unit changed named under `## Review input` →
-      *Machinery friction*, blockers cleared only with `unit publish`, and the
-      worktree left standing for the epic agent's end-of-epic sweep
+- [ ] ORDINARY issues — **this line or the next, not both:** worktree torn down
+      with `"$WT" close <issue-number>-<slug>` (the gate runs first; clear every
+      blocker it names with `unit publish` / `home sync --merge` and re-run —
+      never `git worktree remove`)
+- [ ] EPIC tickets — `home close-out` run as a read-only gate and its verdict in
+      the PR body, every unit changed named under `## Review input` → *Machinery
+      friction*, blockers cleared only with `unit publish` (never `home sync`
+      into the project home), and the worktree **left standing** for the epic
+      agent's end-of-epic sweep
